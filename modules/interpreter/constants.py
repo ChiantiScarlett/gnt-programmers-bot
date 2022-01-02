@@ -41,8 +41,8 @@ TIER_NORMALIZATION_MAP = {'V': '5', 'IV': '4', 'III': '3', 'II': '2', 'I': '1',
                           '골드': 'G', '골': 'G', 'gold': 'G',
                           '플레티넘': 'P', '플래티넘': 'P', '플레': 'P', '플래': 'P',
                           '플': 'P', 'platinum': 'P',
-                          '다이아몬드': 'D', '다이아': 'D', '다': 'D', '다': 'D',
-                          'diamond': 'D',
+                          '다이아몬드': 'D', '다이어몬드': 'D', '다이아': 'D', '다이어': 'D',
+                          '다': 'D', '다': 'D', 'diamond': 'D',
                           '루비': 'R', '루': 'R', 'ruby': 'R'}
 TIER_NORMALIZATION_MAP_KEYS = list(TIER_NORMALIZATION_MAP.keys())
 TIER_NORMALIZATION_MAP_KEYS.sort(reverse=True)
