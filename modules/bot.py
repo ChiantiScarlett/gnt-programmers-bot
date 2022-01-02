@@ -3,49 +3,105 @@ from discord.ext import commands
 import os
 from dotenv import load_dotenv
 import re
+
+from numpy.random.mtrand import poisson, rand, random_sample
 from .constants import TIER_NAME_MAP
 from .functions import command_interpreter, load_problemset
 import random
+import numpy
+import ast
+from datetime import datetime
+from .interpreter import Interpreter
 
 
-class Bot(commands.Bot):
+class Bot(commands.Bot, Interpreter):
+    """
+    디스코드 봇.
+    """
+
     def __init__(self, *args, **kwargs):
-        kwargs['command_prefix'] = ""
+        # 환경 변수를 불러옵니다:
         load_dotenv()
-        self.load_problemset()
-        super().__init__(*args, **kwargs)
 
-    def load_problemset(self):
-        self.problemset = load_problemset()
+        # commands.Bot의 생성자 인자인 command_prefix를 ""로 설정하고, 상위 생성자를 호출합니다.
+        kwargs['command_prefix'] = ""
+        commands.Bot.__init__(self, *args, **kwargs)
+        Interpreter.__init__(self)
 
     def run(self):
+        """
+        [Description]
+            봇을 실행합니다.
+        """
         super().run(os.getenv('DISCORD_BOT_TOKEN'))
 
     async def on_ready(self):
+        """
+        [Description]
+            봇이 준비되었을 때 실행될 메소드입니다.
+        """
         print('루비 온라인!')
 
     async def on_message(self, ctx):
         """
         [Description]
-            <Message Handler>
+            채널에서 대화가 오갈 때 처리할 이벤트 핸들러입니다.
+            public 채널의 대화에서는 해당 봇을 맨션해야만 실행됩니다.
         """
 
-        # ff the channel is not private, you need to mention the bot.
+        # 봇(자기 자신 포함)이 메시지를 보냈을 경우 무시합니다:
+        if ctx.author.bot is True:
+            return
+        # 채널이 public인 경우, 봇을 맨션하지 않았다면 무시합니다:
         if ctx.channel.type == discord.ChannelType.text:
             if not self.user.mentioned_in(ctx):
                 return
+        # 봇에게 날아온 DM일 경우, 무조건 허용합니다:
         elif ctx.channel.type == discord.ChannelType.private:
             pass
+        # 그 외의 경우에는 무시합니다:
         else:
             return
 
-        # remove all mention tag.
-        command = re.sub(
-            re.escape("<@")+"[\S]+?"+re.escape(">"), "", ctx.content).strip()
+        # 멘션 태그를 전부 제거합니다.
+        command = re.sub(re.escape("<@")+"[\S]+?"+re.escape(">"),
+                         "", ctx.content).strip()
 
-        # [랜덤] command execution:
-        if command.startswith('랜덤'):
-            await self._command__random(ctx, command=command)
+        # 주어진 커맨드에 상응하는 액션을 실행합니다. 만약 해당 액션이 존재하지 않을 경우, default 액션을 실행합니다.
+        action = command.split()[0]
+        if action in self.action_map.keys():
+            await self.action_map[action](ctx, command=command)
+        else:
+            await self.action_map['__default__'](ctx, command=command)
+
+    async def _command_study(self, ctx, command):
+        """
+
+        """
+        study_tier_list = os.getenv('STUDY_TIERS')
+        study_tier_list = re.sub('\s', '', study_tier_list)
+        study_tier_list = ast.literal_eval(study_tier_list)
+
+        problem_list = []
+
+        weeknumber, weekday = map(int, datetime.now().strftime("%V %u"))
+        study_seed = int(os.getenv('STUDY_SEED'))
+        seed = study_seed * (weeknumber * 10 - 6 + weekday) // 10
+
+        datetime.now().strftime("%Y%m%d")
+        random_state = numpy.random.RandomState(seed)
+        for item in study_tier_list:
+            problem_list += list(random_state.choice(
+                list(filter(lambda k: k['tier'] in item[0],
+                            self.problemset['data'])), int(item[1])))
+
+        problem_list.sort(key=lambda k: k['id'])
+
+        # for index, sample in enumerate(problem):
+        #     embed.add_field(
+        #         name=f"[{sample['id']}번]",
+        #         value=f"[{sample['title']}](https://boj.kr/{sample['id']})" +
+        #         ('\nㅤ' if index != len(samples) - 1 else ''), inline=False)
 
     async def _command__random(self, ctx, command):
         """
