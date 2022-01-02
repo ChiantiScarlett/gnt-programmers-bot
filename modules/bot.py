@@ -40,7 +40,7 @@ class Bot(commands.Bot, Interpreter):
         [Description]
             봇이 준비되었을 때 실행될 메소드입니다.
         """
-        print('루비 온라인!')
+        print(f"{os.getenv('APP_NAME')} online!")
 
     async def on_message(self, ctx):
         """
