@@ -1,0 +1,4 @@
+numpy
+bs4
+python-dotenv
+discord
